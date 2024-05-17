@@ -40,3 +40,47 @@ original_variables <- names(coef(model))
 reduced_variables <- names(coef(model_reduced))
 
 cat("Verbleibende Variablen im reduzierten Modell: ", reduced_variables, "\n")
+
+
+# d) Kreuzvalidierung
+n <- nrow(data)
+n <- 400
+
+# Initialisierung der Konfusionsmatrix
+confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+rownames(confusion_matrix) <- colnames(confusion_matrix) <- c("Predicted_Red", "Predicted_White") # nolint
+
+# LOOCV durchführen
+for (i in 1:n) {
+  train_data <- data[-i, ]
+  test_data <- data[i, ]
+  model_loocv <- glm(type ~ residual_sugar + alcohol, data = train_data,
+                     family = binomial(link = "logit"))
+
+  model_reduced_loocv <- stepAIC(model_loocv,
+                                 direction = "backward", 
+                                 trace = 0)
+
+  prediction_prob <- predict(model_reduced_loocv,
+                             newdata = test_data, 
+                             type = "response")
+  prediction <- ifelse(prediction_prob >= 0.5, 1, 0)
+
+  actual <- test_data$type
+  if (actual == 0 && prediction == 0) {
+    confusion_matrix["Predicted_Red", "Predicted_Red"] <- confusion_matrix["Predicted_Red", "Predicted_Red"] + 1 # nolint
+  } else if (actual == 0 && prediction == 1) {
+    confusion_matrix["Predicted_White", "Predicted_Red"] <- confusion_matrix["Predicted_White", "Predicted_Red"] + 1 # nolint
+  } else if (actual == 1 && prediction == 0) {
+    confusion_matrix["Predicted_Red", "Predicted_White"] <- confusion_matrix["Predicted_Red", "Predicted_White"] + 1 # nolint
+  } else if (actual == 1 && prediction == 1) {
+    confusion_matrix["Predicted_White", "Predicted_White"] <- confusion_matrix["Predicted_White", "Predicted_White"] + 1 # nolint
+  }
+}
+
+# Konfusionsmatrix anzeigen
+print(confusion_matrix)
+
+# Anzahl der falsch klassifizierten Weißweine
+false_white <- confusion_matrix["Predicted_Red", "Predicted_White"]
+cat("Anzahl der falsch klassifizierten Weißweine: ", false_white, "\n")
