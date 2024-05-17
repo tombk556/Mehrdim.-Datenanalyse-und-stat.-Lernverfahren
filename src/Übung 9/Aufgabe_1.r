@@ -1,4 +1,6 @@
 library(MASS)
+library(pROC)
+
 
 ### Aufgabe 1
 
@@ -44,7 +46,7 @@ cat("Verbleibende Variablen im reduzierten Modell: ", reduced_variables, "\n")
 
 # d) Kreuzvalidierung
 n <- nrow(data)
-n <- 400
+n <- 4
 
 # Initialisierung der Konfusionsmatrix
 confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
@@ -84,3 +86,10 @@ print(confusion_matrix)
 # Anzahl der falsch klassifizierten Weißweine
 false_white <- confusion_matrix["Predicted_Red", "Predicted_White"]
 cat("Anzahl der falsch klassifizierten Weißweine: ", false_white, "\n")
+
+# f) ROC-Kurve für reduced_model
+prediction_prob <- predict(model_reduced, newdata = data, type = "response")
+roc <- roc(data$type, prediction_prob)
+plot(roc, main = "ROC-Kurve für reduced_model", col = "blue")
+# ROC und AUC Wert
+cat("AUC Wert: ", auc(roc), "\n")
